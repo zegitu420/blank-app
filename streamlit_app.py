@@ -16,6 +16,7 @@ import asyncio
 import base64
 import random
 import time
+import json
 
 # Set environment variables
 ENV = os.getenv('cluster', 'mainnet-beta')
@@ -73,12 +74,13 @@ async def order(route: dict):
 
     response = requests.post(
         "https://quote-api.jup.ag/v6/swap",
-        json={
-            "route": route,
-            "userPublicKey": USER_KEYPAIR.pubkey,
-            "wrapUnwrapSOL": True,
-        },
-        headers={'Content-Type': 'application/json', 'User-Agent': ''}
+        headers={'Content-Type': 'application/json', 'User-Agent': ''},
+        data=json.dumps({
+        'quoteResponse': route,
+        'userPublicKey': USER_KEYPAIR.pubkey,
+        'wrapAndUnwrapSol': True,
+        # 'feeAccount': 'fee_account_public_key'  # 必要に応じてこの行を有効にします
+    })
     )
     transaction_json = response.json()
     print("transactionResponse")
@@ -114,37 +116,10 @@ async def start_roop():
         [SOL, BTC, ETH],
     ]
 
-    for pairs in pairs_list:
-        await start(pairs)
-        delay(10)
-
-    for pairs in pairs_list:
-        await start(pairs)
-        delay(10)
-    for pairs in pairs_list:
-        await start(pairs)
-        delay(10)
-    for pairs in pairs_list:
-        await start(pairs)
-        delay(10)
-    for pairs in pairs_list:
-        await start(pairs)
-        delay(10)
-    for pairs in pairs_list:
-        await start(pairs)
-        delay(10)
-    for pairs in pairs_list:
-        await start(pairs)
-        delay(10)
-    for pairs in pairs_list:
-        await start(pairs)
-        delay(10)
-    for pairs in pairs_list:
-        await start(pairs)
-        delay(10)
-    for pairs in pairs_list:
-        await start(pairs)
-        delay(10)
+    for i in range(10):
+        for pairs in pairs_list:
+            await start(pairs)
+            delay(10)
 
 async def start(pairs):
     first_input_amount = 250_000_000
