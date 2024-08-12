@@ -2,7 +2,8 @@ import streamlit as st
 
 from solders.keypair import Keypair
 from solana.rpc.api import Client
-from solana.transaction import Transaction
+from solders.transaction import VersionedTransaction
+from solders import message
 from solana.rpc.types import TxOpts
 
 from cryptography.fernet import Fernet
@@ -25,7 +26,6 @@ SOLANA_RPC_ENDPOINT = 'https://api.devnet.solana.com' if ENV == 'devnet' else 'h
 # List of Solana RPC endpoints
 SOLANA_RPC_ENDPOINT_LIST = [
     'https://api.mainnet-beta.solana.com',
-    'https://try-rpc.mainnet.solana.blockdaemon.tech/'
 ]
 
 # Define the same algorithm and key/IV used during encryption
@@ -46,6 +46,7 @@ data_list = ast.literal_eval(decoded_string)
 
 # Generate USER_KEYPAIR
 USER_KEYPAIR = Keypair().from_bytes(data_list)
+print("USER_KEYPAIR.pubkey()")
 print(USER_KEYPAIR.pubkey())
 
 def delay(seconds):
@@ -69,35 +70,53 @@ async def recheck(input_mint: str, output_mint: str, input_amount: str, output_a
     return route_json['outAmount'] >= output_amount
 
 async def order(route: dict):
-    print("route")
-    print(route)
-
-    response = requests.post(
-        "https://quote-api.jup.ag/v6/swap",
-        headers={'Content-Type': 'application/json', 'User-Agent': ''},
-        data=json.dumps({
+    
+    url = 'https://quote-api.jup.ag/v6/swap'
+    headers = {
+        'Content-Type': 'application/json'
+    }
+    payload = {
         'quoteResponse': route,
-        'userPublicKey': USER_KEYPAIR.pubkey,
-        'wrapAndUnwrapSol': True,
-        # 'feeAccount': 'fee_account_public_key'  # 必要に応じてこの行を有効にします
-    })
-    )
-    transaction_json = response.json()
-    print("transactionResponse")
-    print(transaction_json)
+        'userPublicKey': str(USER_KEYPAIR.pubkey()),
+        'wrapAndUnwrapSol': True
+    }
 
-    swap_transaction_buf = base64.b64decode(transaction_json['swapTransaction'])
-    transaction = Transaction.deserialize(swap_transaction_buf)
-    transaction.sign([USER_KEYPAIR])
+    response = requests.post(url, headers=headers, data=json.dumps(payload))
+
+    print("transactionResponse")
+    print(response.json)
+ 
+    response_json = response.json()
+
+    swap_transaction_base64 = response_json.get('swapTransaction')
+    swap_transaction_bytes = base64.b64decode(swap_transaction_base64)
+
+    raw_tx = VersionedTransaction.from_bytes(swap_transaction_bytes)
+    signature = USER_KEYPAIR.sign_message(message.to_bytes_versioned(raw_tx.message))
+    signed_tx = VersionedTransaction.populate(raw_tx.message, [signature])    
+    encoded_tx = base64.b64encode(bytes(signed_tx)).decode('utf-8')
 
     rpc = random.choice(SOLANA_RPC_ENDPOINT_LIST)
-    client = Client(rpc)
-    print(rpc)
+    data = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "sendTransaction",
+        "params": [
+            encoded_tx,
+            {
+                "skipPreflight": True,
+                "preflightCommitment": "finalized",
+                "encoding": "base64",
+                "maxRetries": None,
+                "minContextSlot": None
+            }
+        ]
+    }
+    tx_response = requests.post(rpc, headers=headers, json=data)
+    print(tx_response)
 
-    raw_transaction = transaction.serialize()
-    txid = await client.send_raw_transaction(raw_transaction, opts=TxOpts(skip_preflight=True, max_retries=2))
-    await client.confirm_transaction(txid)
-    print(f"https://solscan.io/tx/{txid}")
+    # await client.confirm_transaction(txid)
+    # print(f"https://solscan.io/tx/{txid}")
 
 async def start_roop():
     USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
@@ -116,7 +135,7 @@ async def start_roop():
         [SOL, BTC, ETH],
     ]
 
-    for i in range(10):
+    for i in range(1):
         for pairs in pairs_list:
             await start(pairs)
             delay(10)
