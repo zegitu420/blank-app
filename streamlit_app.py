@@ -181,7 +181,7 @@ async def start(pairs):
 
     st.write(f"{first_input_amount}->{amount}")
 
-    if int(amount) / first_input_amount < 1.0001:
+    if int(amount) / first_input_amount < 1.001:
         print("there is no order")
         return
         
