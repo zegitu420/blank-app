@@ -140,6 +140,13 @@ async def start_roop():
             await start(pairs)
             delay(10)
 
+    response = requests.get(
+        f"https://blank-app-y4s1brgx0k.streamlit.app/",
+        headers={'User-Agent': ''}
+    )
+
+    print(response.status_code)
+
 async def start(pairs):
     first_input_amount = 250_000_000
     output_mint = pairs[0]
