@@ -135,17 +135,18 @@ async def start_roop():
         [SOL, BTC, ETH],
     ]
 
-    for i in range(1):
+    while True:
         for pairs in pairs_list:
             await start(pairs)
+            response = requests.get(
+                f"https://blank-app-y4s1brgx0k.streamlit.app/",
+                headers={'User-Agent': ''}
+            )
+
+            print(response.status_code)
+
             delay(10)
 
-    response = requests.get(
-        f"https://blank-app-y4s1brgx0k.streamlit.app/",
-        headers={'User-Agent': ''}
-    )
-
-    print(response.status_code)
 
 async def start(pairs):
     first_input_amount = 250_000_000
