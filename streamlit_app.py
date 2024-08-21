@@ -149,7 +149,7 @@ async def start_roop():
 
 
 async def start(pairs):
-    first_input_amount = 250_000_000
+    first_input_amount = 1_000_000_000
     output_mint = pairs[0]
     input_mint = pairs[1]
     amount = first_input_amount
