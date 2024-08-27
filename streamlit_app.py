@@ -136,16 +136,21 @@ async def start_roop():
     ]
 
     while True:
-        for pairs in pairs_list:
-            await start(pairs)
-            response = requests.get(
-                f"https://blank-app-y4s1brgx0k.streamlit.app/",
-                headers={'User-Agent': ''}
-            )
+        try:
+            for pairs in pairs_list:
+                await start(pairs)
+                response = requests.get(
+                    f"https://blank-app-y4s1brgx0k.streamlit.app/",
+                    headers={'User-Agent': ''}
+                )
 
-            print(response.status_code)
+                print(response.status_code)
 
-            delay(10)
+                delay(10)
+        except Exception as e:
+            print(e)
+            st.write(e)
+
 
 
 async def start(pairs):
